@@ -2,7 +2,7 @@
 
 > **Play it in your browser:** https://raihnforge.github.io/crybt/
 
-Dead men. Sharp cards. Descend through crawls of four encounters, scoring a
+Draw & Descend to Darkness. Crawl through four encounters at a time, scoring a
 four-card hand plus a Hero as one cribbage hand against each monster's power.
 The fallen join your graveyard army; survive the crawl and the offering shop
 turns your spoils into healing and permanent boons. 20 life. No mercy.

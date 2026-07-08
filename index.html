@@ -640,7 +640,7 @@
   #slot-discard{left:1116px;top:174px}
   #slot-graveyard{left:68px;top:456px}
   #slot-offering{left:1116px;top:456px}
-  #slot-status{left:330px;top:14px;width:620px;z-index:2}
+  #slot-status{left:330px;top:14px;width:620px;z-index:40}  /* z40 (was 2): the status bar's stat tips drop into the boons row (z2) — lift the bar's whole subtree above it. Never overlaps the row itself (bar ends ~83, boons start ~92). */
   /* one invisible wrapper (.statusrow) holds BOTH visible boxes — the player's
      stats and the crawl progress — so the pair hugs its content and stays
      centered together as a unit, whatever the stat count (JBK 2026-07-04). */
@@ -991,6 +991,13 @@
     text-transform:none;letter-spacing:0;font-weight:normal;text-align:left;white-space:normal}
   .stat .tip b{color:var(--gold)}
   .stat:hover .tip,.stat.padfocus .tip{display:block}
+  /* Hover/focus tips carry z-index:80, but that only competes INSIDE the host's
+     stacking context — so a tip trapped in a shop column/card (each its own
+     context) got covered by a sibling (reference cards z4, boontiles in
+     shop-bottom z5, the boons row). Lift the hovered/focused HOST itself so its
+     whole subtree (tip included) floats above those neighbours. (JBK 2026-07-08) */
+  .infoic:hover,.boonic:hover,.boontile:hover,.stat:hover,
+  .infoic.padfocus,.boonic.padfocus,.boontile.padfocus,.stat.padfocus{z-index:200}
   .heroswap.can.padfocus .swapic{display:flex}
   .replay-ic.padfocus{color:var(--gold);border-color:var(--gold)}
   body.padmode *{cursor:none}

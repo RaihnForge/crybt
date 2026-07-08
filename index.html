@@ -614,21 +614,22 @@
   .menu-btn.start:hover{box-shadow:0 0 32px rgba(157,177,76,.6),0 4px 14px rgba(0,0,0,.6);color:#000}
   /* scrollers on the table are invisible until you hover their box — then a thin purple
      thumb, never the white system bar (JBK). Covers the stage and every scrolling panel. */
-  .stage,.stage-chronicle .log,#chronicle .log,.duel-flank .combos,.resolve-summary .sum-body{
+  .stage,.stage-chronicle .log,#chronicle .log,.duel-flank .combos,.resolve-summary .sum-body,.chronbook-log{
     scrollbar-width:thin;scrollbar-color:transparent transparent}
   .stage:hover,.stage-chronicle:hover .log,#chronicle:hover .log,
-  .duel-flank .combos:hover,.resolve-summary:hover .sum-body{
+  .duel-flank .combos:hover,.resolve-summary:hover .sum-body,.bookopen.book-chronicle:hover .chronbook-log{
     scrollbar-color:rgba(185,139,255,.5) transparent}
   .stage::-webkit-scrollbar,.stage-chronicle .log::-webkit-scrollbar,#chronicle .log::-webkit-scrollbar,
-  .duel-flank .combos::-webkit-scrollbar,.resolve-summary .sum-body::-webkit-scrollbar{width:5px;height:5px}
+  .duel-flank .combos::-webkit-scrollbar,.resolve-summary .sum-body::-webkit-scrollbar,.chronbook-log::-webkit-scrollbar{width:5px;height:5px}
   .stage::-webkit-scrollbar-track,.stage-chronicle .log::-webkit-scrollbar-track,#chronicle .log::-webkit-scrollbar-track,
-  .duel-flank .combos::-webkit-scrollbar-track,.resolve-summary .sum-body::-webkit-scrollbar-track{background:transparent}
+  .duel-flank .combos::-webkit-scrollbar-track,.resolve-summary .sum-body::-webkit-scrollbar-track,.chronbook-log::-webkit-scrollbar-track{background:transparent}
   .stage::-webkit-scrollbar-thumb,.stage-chronicle .log::-webkit-scrollbar-thumb,#chronicle .log::-webkit-scrollbar-thumb,
-  .duel-flank .combos::-webkit-scrollbar-thumb,.resolve-summary .sum-body::-webkit-scrollbar-thumb{
+  .duel-flank .combos::-webkit-scrollbar-thumb,.resolve-summary .sum-body::-webkit-scrollbar-thumb,.chronbook-log::-webkit-scrollbar-thumb{
     background:transparent;border-radius:4px}
   .stage:hover::-webkit-scrollbar-thumb,.stage-chronicle:hover .log::-webkit-scrollbar-thumb,
   #chronicle:hover .log::-webkit-scrollbar-thumb,.duel-flank .combos:hover::-webkit-scrollbar-thumb,
-  .resolve-summary:hover .sum-body::-webkit-scrollbar-thumb{background:rgba(185,139,255,.5)}
+  .resolve-summary:hover .sum-body::-webkit-scrollbar-thumb,
+  .bookopen.book-chronicle:hover .chronbook-log::-webkit-scrollbar-thumb{background:rgba(185,139,255,.5)}
   #canvas[data-phase="shop"] .env{
     background-image:var(--stage-bg02)}
   /* slots / regions */
@@ -676,7 +677,9 @@
      Backgrounds/shadows only on the mid-run crawl book (zero geometry change — the tuned
      battle columns and scoring walkthrough keep their layout). Presentation only. ---- */
   /* Chronicle: a candle-lit page — warm parchment wash, gold rim, glow at the page's head */
-  .bookopen.book-chronicle{padding:8px 14px;
+  /* flex column + clip so ONLY the inner .chronbook-log scrolls — the page itself
+     must not also scroll (that produced a double scrollbar). JBK 2026-07-07 */
+  .bookopen.book-chronicle{padding:8px 14px;display:flex;flex-direction:column;overflow:hidden;min-height:0;
     background:radial-gradient(70% 44% at 50% 0%, rgba(255,209,102,.10), transparent 72%),
       linear-gradient(180deg, rgba(32,25,16,.66), rgba(20,15,10,.52) 45%, rgba(11,8,5,.72));
     box-shadow:inset 0 0 0 1px rgba(255,209,102,.16), inset 0 0 64px rgba(5,3,10,.55)}
@@ -726,8 +729,8 @@
   .bookopen.bookswap.swap-left{animation:bookInL .3s cubic-bezier(.4,0,.2,1)}
   .bookopen.bookswap.swap-right{animation:bookInR .3s cubic-bezier(.4,0,.2,1)}
   /* ---- Chronicle book (open): the run's log, large and readable ---- */
-  .chronbook{display:flex;flex-direction:column;height:100%}
-  .chronbook-log{flex:1;overflow:auto;padding:2px 8px 4px;font-size:13.5px;line-height:1.6;color:var(--ink)}
+  .chronbook{display:flex;flex-direction:column;flex:1;min-height:0}
+  .chronbook-log{flex:1;min-height:0;overflow:auto;padding:2px 8px 4px;font-size:13.5px;line-height:1.6;color:var(--ink)}
   .chronbook-log .clog-line{padding:3px 2px;border-bottom:1px solid rgba(255,255,255,.05)}
   /* the prologue page — shown while the log is still unwritten */
   .chron-prologue{max-width:660px;margin:10px auto 0;font-size:14px;line-height:1.75;color:var(--ink)}
@@ -4325,7 +4328,7 @@ function menuHTML(){
   return `<div class="titlescreen">
     <img class="logo" src="${TITLE_LOGO}" alt="CRYBT">
     <div class="tagline">Draw &amp; Descend to Darkness</div>
-    <div class="buildtag">pre-alpha · 2026-07-07</div>
+    <div class="buildtag">pre-alpha · 2026-07-08</div>
     <div class="titlemenu">
       <button class="menu-btn start" onclick="newGame();startPrelude()">${SIG('skull')} Start Game</button>
       <button class="menu-btn" onclick="toggleSettings()">${SIG('gear')} Options</button>

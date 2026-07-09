@@ -640,7 +640,7 @@
   #slot-discard{left:1116px;top:174px}
   #slot-graveyard{left:68px;top:456px}
   #slot-offering{left:1116px;top:456px}
-  #slot-status{left:330px;top:14px;width:620px;z-index:40}  /* z40 (was 2): the status bar's stat tips drop into the boons row (z2) — lift the bar's whole subtree above it. Never overlaps the row itself (bar ends ~83, boons start ~92). */
+  #slot-status{left:330px;top:14px;width:620px;z-index:2}
   /* one invisible wrapper (.statusrow) holds BOTH visible boxes — the player's
      stats and the crawl progress — so the pair hugs its content and stays
      centered together as a unit, whatever the stat count (JBK 2026-07-04). */
@@ -991,22 +991,23 @@
     text-transform:none;letter-spacing:0;font-weight:normal;text-align:left;white-space:normal}
   .stat .tip b{color:var(--gold)}
   .stat:hover .tip,.stat.padfocus .tip{display:block}
-  /* Hover/focus tips carry z-index:80, but that only competes INSIDE the host's
-     stacking context — so a tip trapped in a shop column/card (each its own
-     context) got covered by a sibling (reference cards z4, boontiles in
-     shop-bottom z5, the boons row). Lift the hovered/focused HOST itself so its
-     whole subtree (tip included) floats above those neighbours. (JBK 2026-07-08) */
-  .infoic:hover,.boonic:hover,.boontile:hover,.stat:hover,
-  .infoic.padfocus,.boonic.padfocus,.boontile.padfocus,.stat.padfocus{z-index:200}
-  /* …but the host-lift alone can't escape a trapping CONTAINER: the necromancer
-     sheet (.prayerzone, z5) and the boons shelf (.shop-bottom, z5) are sibling
-     stacking contexts, so the later one (.shop-bottom) painted the Life/Armor/Army
-     tips behind the boons. Raise whichever container holds the hovered/focused host
-     above its z5 sibling. (JBK 2026-07-08) */
-  .prayerzone:has(:is(.boontile,.boonic,.stat,.infoic):hover),
-  .prayerzone:has(:is(.boontile,.boonic,.stat,.infoic).padfocus),
-  .shop-bottom:has(:is(.boontile,.boonic,.stat,.infoic):hover),
-  .shop-bottom:has(:is(.boontile,.boonic,.stat,.infoic).padfocus){z-index:60}
+  /* ── Tooltip portal (JBK 2026-07-08) ─────────────────────────────────────
+     Every hover/focus/pad tip is drawn in ONE top-level overlay (#tiplayer, a
+     child of #canvas) instead of in place, so a tip can never be trapped or
+     clipped by a container's stacking context — the durable fix that replaces
+     the earlier per-host / per-container z-index lifts. The in-place sources
+     stay in the DOM as the content of record but never render (rule below);
+     the portal JS reads their html + width. .callout .tip is an inline note,
+     not a hover tip, so the suppression is scoped to the four hover hosts. */
+  :is(.infoic,.boonic,.boontile,.stat) .tip{display:none!important}
+  #tiplayer{position:absolute;inset:0;z-index:3000;pointer-events:none;overflow:visible}
+  #tiplayer .porttip{position:absolute;display:none;box-sizing:border-box;max-width:360px;
+    background:var(--panel);border:1px solid var(--accent2);border-radius:8px;padding:9px 11px;
+    font-size:12.5px;line-height:1.45;font-weight:normal;font-style:normal;color:var(--ink);
+    text-align:left;text-transform:none;letter-spacing:normal;white-space:normal;
+    box-shadow:0 12px 34px rgba(0,0,0,.7);pointer-events:none}
+  #tiplayer .porttip.show{display:block}
+  #tiplayer .porttip b{color:var(--gold)}
   .heroswap.can.padfocus .swapic{display:flex}
   .replay-ic.padfocus{color:var(--gold);border-color:var(--gold)}
   body.padmode *{cursor:none}
@@ -3961,6 +3962,56 @@ function render(){
   }
   else if(G.phase==="dead") s.innerHTML=deadHTML();
   maybeAutoPlay();   // self-gates: only fires when an interactive breakdown is on screen
+  // render rebuilds the tip hosts — if the one we're showing a tip for is gone, drop it
+  if(_tipHost && !document.body.contains(_tipHost)) tipPortalHide();
+}
+
+/* ── Tooltip portal ────────────────────────────────────────────────────────
+   Draws the active hover/focus/pad tip in one top-level overlay (#tiplayer)
+   instead of in place, so it can never be trapped/clipped by a container's
+   stacking context. Game-agnostic bar the TIP_HOSTS selector; the sources stay
+   in the DOM (CSS hides them) and this reads their html + intended width. */
+const TIP_HOSTS = ".infoic, .boonic, .boontile, .stat";
+let _tipEl=null, _tipHost=null;
+function tipEl(){
+  if(_tipEl && _tipEl.isConnected) return _tipEl;
+  const cv=document.getElementById("canvas"); if(!cv) return null;
+  let L=document.getElementById("tiplayer");
+  if(!L){ L=document.createElement("div"); L.id="tiplayer"; cv.appendChild(L); }
+  _tipEl=document.createElement("div"); _tipEl.className="porttip";
+  L.appendChild(_tipEl);
+  return _tipEl;
+}
+function tipPortalShow(host){
+  if(!host) return;
+  const src=host.querySelector(".tip"); if(!src) return;
+  const el=tipEl(); if(!el) return;
+  _tipHost=host;
+  el.innerHTML=src.innerHTML;
+  const w=parseFloat(getComputedStyle(src).width);
+  el.style.width=(w>0?Math.min(w,360):240)+"px";
+  el.classList.add("show");
+  tipPortalPlace(host);
+}
+function tipPortalPlace(host){
+  const cv=document.getElementById("canvas"); if(!cv||!_tipEl) return;
+  const cr=cv.getBoundingClientRect(), sc=(cr.width/1280)||1, hr=host.getBoundingClientRect();
+  const hx=(hr.left-cr.left)/sc, hy=(hr.top-cr.top)/sc, hw=hr.width/sc, hh=hr.height/sc;
+  const tw=_tipEl.offsetWidth, th=_tipEl.offsetHeight, gap=8, W=1280, H=720, m=8;
+  let x=hx+hw/2-tw/2; x=Math.max(m, Math.min(x, W-tw-m));
+  let y=hy+hh+gap;                       // below the host…
+  if(y+th>H-m) y=hy-th-gap;              // …unless it would fall off the board — flip above
+  if(y<m) y=m;
+  _tipEl.style.left=Math.round(x)+"px"; _tipEl.style.top=Math.round(y)+"px";
+}
+function tipPortalHide(){ if(_tipEl) _tipEl.classList.remove("show"); _tipHost=null; }
+function initTipPortal(){
+  const cv=document.getElementById("canvas"); if(!cv || cv._tipInit) return; cv._tipInit=true;
+  const hostOf=t=>(t&&t.closest)?t.closest(TIP_HOSTS):null;
+  cv.addEventListener("mouseover", e=>{ const h=hostOf(e.target); if(h&&h!==_tipHost&&h.querySelector(".tip")) tipPortalShow(h); });
+  cv.addEventListener("mouseout",  e=>{ const h=hostOf(e.target); if(h&&h===_tipHost&&!h.contains(e.relatedTarget)) tipPortalHide(); });
+  cv.addEventListener("focusin",   e=>{ const h=hostOf(e.target); if(h&&h.querySelector(".tip")) tipPortalShow(h); });
+  cv.addEventListener("focusout",  e=>{ const h=hostOf(e.target); if(h&&h===_tipHost) tipPortalHide(); });
 }
 
 /* ---------- dice HUD (iface: diceStats) — the status readouts as die faces ----------
@@ -5016,6 +5067,7 @@ function padBlur(){
     PAD.el.classList.remove('padfocus');
     const s=padSlotOf(PAD.el); if(s) s.classList.remove('padhov');
     if(PAD.el.dataset && PAD.el.dataset.cid) hiClear();
+    if(_tipHost===PAD.el) tipPortalHide();   // controller path → drop the portal tip
   }
   PAD.el=null;
 }
@@ -5027,6 +5079,7 @@ function padFocus(el){
   el.classList.add('padfocus');
   const s=padSlotOf(el); if(s) s.classList.add('padhov');
   if(el.dataset && el.dataset.cid) hiCard(el.dataset.cid);   // cross-highlight like hover
+  if(el.matches && el.matches(TIP_HOSTS) && el.querySelector('.tip')) tipPortalShow(el);  // controller path → same portal
   try{ el.scrollIntoView({block:'nearest',inline:'nearest'}); }catch(e){}
 }
 // Where the cursor lands when it has nowhere better: the phase's intended next
@@ -5465,6 +5518,7 @@ fitCanvas();
 applyLayout();     // board offsets (baked default ⊕ this device's saved layout)
 buildSigilDefs();
 AudioSys.init();   // decode the optional audio set — stays silent until the first gesture
+initTipPortal();   // hover/focus/pad tips render in a top-level overlay (never trapped/clipped)
 newGame();
 </script>
 </body>

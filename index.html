@@ -998,6 +998,15 @@
      whole subtree (tip included) floats above those neighbours. (JBK 2026-07-08) */
   .infoic:hover,.boonic:hover,.boontile:hover,.stat:hover,
   .infoic.padfocus,.boonic.padfocus,.boontile.padfocus,.stat.padfocus{z-index:200}
+  /* …but the host-lift alone can't escape a trapping CONTAINER: the necromancer
+     sheet (.prayerzone, z5) and the boons shelf (.shop-bottom, z5) are sibling
+     stacking contexts, so the later one (.shop-bottom) painted the Life/Armor/Army
+     tips behind the boons. Raise whichever container holds the hovered/focused host
+     above its z5 sibling. (JBK 2026-07-08) */
+  .prayerzone:has(:is(.boontile,.boonic,.stat,.infoic):hover),
+  .prayerzone:has(:is(.boontile,.boonic,.stat,.infoic).padfocus),
+  .shop-bottom:has(:is(.boontile,.boonic,.stat,.infoic):hover),
+  .shop-bottom:has(:is(.boontile,.boonic,.stat,.infoic).padfocus){z-index:60}
   .heroswap.can.padfocus .swapic{display:flex}
   .replay-ic.padfocus{color:var(--gold);border-color:var(--gold)}
   body.padmode *{cursor:none}
@@ -4335,7 +4344,7 @@ function menuHTML(){
   return `<div class="titlescreen">
     <img class="logo" src="${TITLE_LOGO}" alt="CRYBT">
     <div class="tagline">Draw &amp; Descend to Darkness</div>
-    <div class="buildtag">pre-alpha · 2026-07-08</div>
+    <div class="buildtag">pre-alpha · 2026-07-09</div>
     <div class="titlemenu">
       <button class="menu-btn start" onclick="newGame();startPrelude()">${SIG('skull')} Start Game</button>
       <button class="menu-btn" onclick="toggleSettings()">${SIG('gear')} Options</button>

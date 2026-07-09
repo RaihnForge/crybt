@@ -154,7 +154,9 @@
   .duel-flank .stage-chronicle{margin-top:0}
   .duel-flank .combos{margin-top:0}
   .resolve-duel{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;align-self:stretch}
-  .resolve-duel .cine-duel{gap:150px;align-items:flex-start}  /* spread a bit vs the ~98px clash */
+  /* duel cards: even + closer — equal space at left edge, between, and right edge
+     (space-evenly in a fixed width) instead of a wide fixed gap. JBK 2026-07-09 */
+  .resolve-duel .cine-duel{gap:0;width:340px;justify-content:space-evenly;align-items:flex-start}
   .resolve-duel .cine-side{gap:6px}
   .resolve-duel .help{text-align:center;margin:0}
   /* after-action box (JBK 2026-07-05): ONE container — Victory!/Wounded! verdict on top,
@@ -164,7 +166,9 @@
   /* the flanks may not outgrow the fold: long chronicles and combo-rich breakdowns
      scroll inside their boxes instead of pushing the screen past 508px */
   .resolve-screen .stage-chronicle .log{max-height:96px;overflow:auto}
-  .resolve-screen .duel-flank .combos{max-height:330px;overflow-y:auto}
+  /* scoring icon-cards + text at ~77% (zoom scales with reflow) — frees stage room
+     and un-squishes the resolution score card. JBK 2026-07-09 */
+  .resolve-screen .duel-flank .combos{zoom:.77;max-height:430px;overflow-y:auto}
   /* clash and resolution share one card size + typography (JBK: no font change at the
      morph handoff) — sizes live on the base .cine-card/.cine-badge rules */
   .resolve-summary .sum-body{max-height:76px;overflow:auto}  /* backstop for note pile-ups */

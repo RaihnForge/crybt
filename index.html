@@ -3604,9 +3604,11 @@ function playStrikeCinematic(r, done){
     }
     v.classList.add('in');
   });
-  // Beat 4 — the loser's card turns red.
+  // Beat 4 — the loser's card turns red; a beaten enemy takes the claw across the face
+  // (the kill-confirm flourish plays HERE, on the clash the player is actually watching —
+  // the resolve-screen claim only claws when the cinematic is off).
   at(2850,()=>{ (r.win?$('cineFoe'):$('cineYou')).classList.add('cine-loser');
-    if(r.win) AudioSys.sfx('monster.die'); });
+    if(r.win){ AudioSys.sfx('monster.die'); clawMark($('cineCard').querySelector('.card')); } });
   // Beat 5 (enemy beaten) — red fades into a green glow: the corpse is claimed.
   const claimed = r.win && !r.monster.joker;
   if(claimed) at(3550,()=>{ const f=$('cineFoe'); f.classList.remove('cine-loser'); f.classList.add('cine-claimed');
@@ -3659,14 +3661,20 @@ function claimMonster(){
 // (afterResolve() re-renders, destroying this card's DOM, so the advance waits out the
 // animation). Loss paths keep their shudder / instant advance. A second click mid-
 // flourish fast-forwards immediately; the stale timer dies on afterResolve's phase guard.
+function clawMark(card){
+  if(!card || card.querySelector('.clawmark')) return;
+  const m=document.createElement('span'); m.className='clawmark';
+  m.innerHTML='<i class="claw-dim"></i><span class="claw-swipe"><svg viewBox="0 0 10 10" aria-hidden="true"><use href="#sig-claw"/></svg></span>';
+  card.appendChild(m);
+}
 function clawThenResolve(){
   if(!G || G.phase!=="resolve") return;
   const won=G.result&&G.result.win;
   const card=document.querySelector('#rdMon .card');
-  if(!won || !card || card.querySelector('.clawmark')){ afterResolve(); return; }
-  const m=document.createElement('span'); m.className='clawmark';
-  m.innerHTML='<i class="claw-dim"></i><span class="claw-swipe"><svg viewBox="0 0 10 10" aria-hidden="true"><use href="#sig-claw"/></svg></span>';
-  card.appendChild(m);
+  // with the strike cinematic on, the claw already tore at the clash (Beat 4) —
+  // the claim click advances instantly; the flourish here serves the instant path
+  if(!won || !card || FLAG('strikeCinematic') || card.querySelector('.clawmark')){ afterResolve(); return; }
+  clawMark(card);
   setTimeout(afterResolve, 800);
 }
 function afterResolve(){
@@ -4528,7 +4536,7 @@ function menuHTML(){
   return `<div class="titlescreen">
     <img class="logo" src="${TITLE_LOGO}" alt="CRYBT">
     <div class="tagline">Draw &amp; Descend to Darkness</div>
-    <div class="buildtag">pre-alpha · 2026-08-04</div>
+    <div class="buildtag">pre-alpha · 2026-08-04 · 11:07</div>
     <div class="titlemenu">
       <button class="menu-btn start" onclick="newGame();startPrelude()">${SIG('skull')} Start Game</button>
       <button class="menu-btn" onclick="toggleSettings()">${SIG('gear')} Options</button>

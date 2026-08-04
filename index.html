@@ -1468,6 +1468,9 @@ const SETTINGS_DEF = {
   lairPrelude:   {group:"iface",  def:true,
     name:"Open each run in the Workshop (walk in through the Crypt door)",
     og:"Presentation only. A fresh run begins at home in your lair: the Workshop lays out your necromancer's sheet and the boons to come, and the first fight only deals when you open the Crybt Crawl book and step through the Crypt door — the same walk every later crawl takes. Off = a new run deals Crawl 1 immediately. Zero rules effect."},
+  preludeAutoEnter:{group:"iface", def:true,
+    name:"Auto-walk the Workshop prelude into the first crawl",
+    og:"Presentation only. On a fresh run the Workshop shows itself for a beat, the Crybt Crawl book opens on its own, and after a one-second breath the Crypt door swings — the first deal arrives without a click, and you've seen the between-crawl room on the way down. Clicking ahead of the walk still works. Off = linger in the Workshop and step through the door yourself. Zero rules effect."},
   diceStats:     {group:"iface",  def:true,
     name:"Show the status readouts as dice",
     og:"Presentation only. Renders the HUD numbers as die faces — Life on a d20, and the additive stats (Armor, Dominance, Bloodlust) plus the Crawl on a die that starts at d6 and matures to a d20 as the number outgrows it; Encounter stays a d6. Pick the die colour/design below. Off = the plain numbers. Zero rules effect."},
@@ -3048,6 +3051,15 @@ function startPrelude(){
   G.prelude=true; G.phase="shop";
   render();
   narrate('prelude');   // the Storyteller sets the mood of the fresh run — every run, not just the first page load
+  // Auto-walk (preludeAutoEnter): show the Workshop for a beat, flip open the Crybt
+  // Crawl book, hold one second on the Crypt door, then step through unprompted. The
+  // player can always click ahead — beginCrawl()'s prelude guard makes the timers
+  // no-ops once the door has opened, and a book the player flipped to stays put.
+  if(FLAG('preludeAutoEnter')){
+    const g=G;
+    setTimeout(()=>{ if(G===g && G.prelude && SHOP_BOOK==='workshop') openShopBook('crawl'); }, 700);
+    setTimeout(()=>{ if(G===g && G.prelude && SHOP_BOOK==='crawl') beginCrawl(); }, 1700);
+  }
 }
 // The prelude's Crypt door — the run's FIRST descent. Every later door is endCrawl()
 // (sweep the offering + crawl++); this one only closes the prelude and deals Crawl 1.
@@ -4402,7 +4414,7 @@ function menuHTML(){
   return `<div class="titlescreen">
     <img class="logo" src="${TITLE_LOGO}" alt="CRYBT">
     <div class="tagline">Draw &amp; Descend to Darkness</div>
-    <div class="buildtag">pre-alpha · 2026-07-11</div>
+    <div class="buildtag">pre-alpha · 2026-08-04</div>
     <div class="titlemenu">
       <button class="menu-btn start" onclick="newGame();startPrelude()">${SIG('skull')} Start Game</button>
       <button class="menu-btn" onclick="toggleSettings()">${SIG('gear')} Options</button>
@@ -5470,7 +5482,7 @@ const LAYOUT_TARGETS=[            // the game-specific manifest the (standalone)
   {k:"hudlinks",  sel:".hudlinks",       label:"Sys buttons"},
 ];
 /*__CRYBT_LAYOUT_DEFAULT_START__*/
-const DEFAULT_LAYOUT={"stage/head":{"x":8,"y":0,"s":1,"w":836},"stage/prompt":{"x":12,"y":0,"s":1,"w":816,"h":16},"stage/hand":{"x":12,"y":0,"s":1,"w":372,"h":268},"stage/axis":{"x":4,"y":0,"s":1,"w":136},"stage/score":{"x":-12,"y":0,"s":1,"w":320,"h":228,"z":0.9},"stage/chron":{"x":8,"y":0,"s":1,"h":228,"z":0.95},"stage/duel":{"x":0,"y":40,"s":1,"w":320,"h":356},"stage/duel/summary":{"x":0,"y":4,"s":1,"w":308},"stage/book/boons":{"x":8,"y":8,"s":1},"stage/book/sheet":{"x":0,"y":64,"s":1},"stage/book/cta":{"x":0,"y":104,"s":1},"narrator":{"x":36,"y":-76,"s":1}};
+const DEFAULT_LAYOUT={"stage/head":{"x":8,"y":0,"s":1,"w":836},"stage/prompt":{"x":12,"y":0,"s":1,"w":816,"h":16},"stage/hand":{"x":12,"y":0,"s":1,"w":372,"h":268},"stage/axis":{"x":4,"y":0,"s":1,"w":136},"stage/score":{"x":-12,"y":0,"s":1,"w":320,"h":228,"z":0.9},"stage/chron":{"x":8,"y":0,"s":1,"h":228,"z":0.95},"stage/duel":{"x":0,"y":40,"s":1,"w":320,"h":356},"stage/duel/summary":{"x":0,"y":4,"s":1,"w":308},"stage/book/boons":{"x":8,"y":8,"s":1},"stage/book/cta":{"x":0,"y":104,"s":1},"narrator":{"x":36,"y":-76,"s":1}};
 /*__CRYBT_LAYOUT_DEFAULT_END__*/
 // flatten: path -> node {path, cssSel (full descendant chain), parentPath, kids}
 const LO_ID={};

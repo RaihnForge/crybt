@@ -1405,13 +1405,15 @@ function buildSigilDefs(){
   }
   defs+=sym("card-BACK", cardBackInner());
   defs+=sym("card-JOKER", cardJokerInner());
-  // claw mark — the kill-confirm flourish over a claimed monster (clawThenResolve):
-  // three tapered rakes, middle one longest, each leaning slightly so the tear reads
-  // canted. Color rides currentColor so the CSS animation can pulse/brighten the red.
+  // claw mark — the kill-confirm flourish over a claimed monster (clawMark):
+  // three rakes, middle one longest, each leaning slightly so the tear reads canted.
+  // Every rake comes to a sharp point at both ends and its edges zig in and out —
+  // torn card stock, not painted stripes. Color rides currentColor so the CSS
+  // animation can pulse/brighten the red.
   defs+=sym("claw",
-    `<path fill="currentColor" d="M2.55 0.8 L3.5 0.95 L2.6 9.0 L1.85 8.8 Z"/>`+
-    `<path fill="currentColor" d="M5.0 0 L6.1 0.15 L4.95 10 L4.35 9.85 Z"/>`+
-    `<path fill="currentColor" d="M7.45 0.8 L8.4 0.95 L7.5 9.0 L6.75 8.8 Z"/>`);
+    `<path fill="currentColor" d="M3.15 0.9 L2.65 2.0 L2.62 3.0 L2.22 4.0 L2.29 5.2 L2.01 6.4 L2.13 7.6 L2.10 8.9 L2.41 7.6 L2.85 6.4 L2.91 5.2 L3.26 4.0 L3.16 3.0 L3.35 2.0 Z"/>`+
+    `<path fill="currentColor" d="M5.6 0 L5.07 1.2 L5.05 2.2 L4.61 3.2 L4.72 4.2 L4.41 5.4 L4.54 6.6 L4.27 7.8 L4.35 10 L4.97 7.8 L5.02 6.6 L5.45 5.4 L5.44 4.2 L5.77 3.2 L5.61 2.2 L5.83 1.2 Z"/>`+
+    `<path fill="currentColor" d="M7.9 0.9 L7.40 2.0 L7.37 3.0 L6.97 4.0 L7.04 5.2 L6.76 6.4 L6.88 7.6 L6.85 8.9 L7.16 7.6 L7.60 6.4 L7.66 5.2 L8.01 4.0 L7.91 3.0 L8.10 2.0 Z"/>`);
   ART_KEYS.clear();
   if(set && set.cardArt && FLAG('cardArt')){
     for(const k in set.cardArt){
@@ -4536,7 +4538,7 @@ function menuHTML(){
   return `<div class="titlescreen">
     <img class="logo" src="${TITLE_LOGO}" alt="CRYBT">
     <div class="tagline">Draw &amp; Descend to Darkness</div>
-    <div class="buildtag">pre-alpha · 2026-08-04 · 11:07</div>
+    <div class="buildtag">pre-alpha · 2026-08-04 · 11:12</div>
     <div class="titlemenu">
       <button class="menu-btn start" onclick="newGame();startPrelude()">${SIG('skull')} Start Game</button>
       <button class="menu-btn" onclick="toggleSettings()">${SIG('gear')} Options</button>

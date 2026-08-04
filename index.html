@@ -165,7 +165,6 @@
   .resolve-screen .prompt{margin-bottom:1px}   /* every vertical px matters — 508px stage fold */
   /* the flanks may not outgrow the fold: long chronicles and combo-rich breakdowns
      scroll inside their boxes instead of pushing the screen past 508px */
-  .resolve-screen .stage-chronicle .log{max-height:96px;overflow:auto}
   /* scoring icon-cards + text at ~77% (zoom scales with reflow) — frees stage room
      and un-squishes the resolution score card. JBK 2026-07-09 */
   .resolve-screen .duel-flank .combos{zoom:.77;max-height:430px;overflow-y:auto}
@@ -788,6 +787,7 @@
   .volrow .vlab{width:96px;font-size:13px;display:flex;align-items:center;gap:6px}
   .volrow input[type=range]{flex:1;accent-color:var(--accent2)}
   .volrow .vpct{width:48px;text-align:right;font-size:12px;color:var(--muted)}
+  .volrow .vpct.sspd{width:84px}   /* speed-notch names (Solemn…Lightning) need more room than a percent */
   /* central play area */
   .stage{position:absolute;left:168px;top:118px;width:944px;height:508px;
     background:rgba(13,10,24,.74);border:1px solid rgba(255,209,102,.28);border-radius:14px;box-shadow:0 10px 40px rgba(0,0,0,.5);
@@ -911,9 +911,11 @@
   .replay-ic:hover,.replay-ic:focus-visible{color:var(--gold);border-color:var(--gold);outline:none}
   /* Chronicle relocated into the stage's left column on Prepare-to-Strike (per JoshChanges) */
   .stage-chronicle{margin-top:16px;max-width:none;background:rgba(13,10,24,.55);
-    border:1px solid var(--line);border-radius:10px;padding:9px 12px}
-  .stage-chronicle h4{margin:0 0 5px;font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase}
-  .stage-chronicle .log{font-size:11px;color:var(--muted);line-height:1.5;max-height:118px;overflow:auto}
+    border:1px solid var(--line);border-radius:10px;padding:9px 12px;
+    display:flex;flex-direction:column;min-height:0}   /* flex column so .log fills the layout-sized box */
+  .stage-chronicle h4{margin:0 0 5px;font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;flex:0 0 auto}
+  .stage-chronicle .log{font-size:11px;color:var(--muted);line-height:1.5;
+    flex:1 1 auto;min-height:0;max-height:none;overflow:auto}   /* fill the layout-sized panel (overrides .log's generic 150px cap) */
   #canvas[data-phase="hero"] #chronicle,
   #canvas[data-phase="resolve"] #chronicle{display:none}   /* avoid duplicate — the in-stage one takes over */
   .breakdown-axis{flex:1 1 250px;min-width:220px}
@@ -1465,6 +1467,9 @@ const SETTINGS_DEF = {
   bookStage:     {group:"iface",  def:true,
     name:"The crawl plays inside the Crybt Crawl book (bookshelf motif everywhere)",
     og:"Presentation only, zero rules effect. The three-book shelf frames every screen of the game: mid-run the encounter itself plays inside the open Crybt Crawl book, with the Chronicle standing as a peekable spine (the fight waits) and the Workshop as a locked one — the lair is unreachable until crawl's end, exactly as the rules already say. Descending opens the Crawl book; coming home closes it and the Workshop takes over, where the Crawl book's pages hold the breathing crypt gate instead. Off = the crawl fills the stage flat and books appear only at the Offering."},
+  workshopPeek:  {group:"iface",  def:true,
+    name:"The Workshop stays readable mid-crawl (browse-only peek)",
+    og:"Presentation only. Mid-crawl the Workshop spine opens read-only — your necromancer's sheet, the boon shelf, and prayer costs, for planning the next Offering. Nothing can be bought or spent from the peek; the lair still only truly opens at crawl's end, exactly as the rules say. Off = the spine stays locked shut. Zero rules effect."},
   lairPrelude:   {group:"iface",  def:true,
     name:"Open each run in the Workshop (walk in through the Crypt door)",
     og:"Presentation only. A fresh run begins at home in your lair: the Workshop lays out your necromancer's sheet and the boons to come, and the first fight only deals when you open the Crybt Crawl book and step through the Crypt door — the same walk every later crawl takes. Off = a new run deals Crawl 1 immediately. Zero rules effect."},
@@ -1601,7 +1606,7 @@ function groupHTML(g){
       <span class="setog">${d.og}</span></span></label>`;
   }
   // the die-skin swatch picker rides under the Interface flags, self-gated on diceStats
-  if(g==="iface") html+=diceSkinPickerHTML();
+  if(g==="iface") html+=diceSkinPickerHTML()+scoreSpeedPickerHTML();
   return html;
 }
 function toggleSettings(){ psToggle(['menu','options']); }
@@ -2939,6 +2944,23 @@ function comboBreakdownHTML(cards, title, interactive){
 let ANIM={token:0};
 function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
 const T_INIT=400, T_PASS=460, T_LINE_ON=320, T_POINT=270, T_LINE_OFF=240;
+/* Scoring walkthrough speed (iface control, zero rules effect): five notches divide
+   every walkthrough beat. Notch 1 = the original pacing (the slowest); notch 4 =
+   double time, the default (JBK 2026-08-04). Persisted per device like the dice skin. */
+const SCORE_SPEEDS=[
+  {m:1,   name:"Solemn"},
+  {m:1.35,name:"Measured"},
+  {m:1.7, name:"Brisk"},
+  {m:2,   name:"Swift"},
+  {m:3,   name:"Lightning"}];
+let SCORE_SPEED=(()=>{ try{ const v=parseInt(localStorage.getItem("crybt-scorespeed"),10);
+  return (v>=1&&v<=SCORE_SPEEDS.length)?v:4; }catch(e){ return 4; } })();
+function setScoreSpeed(v){
+  v=Math.max(1,Math.min(SCORE_SPEEDS.length,parseInt(v,10)||4));
+  SCORE_SPEED=v; try{ localStorage.setItem("crybt-scorespeed",String(v)); }catch(e){}
+  const el=document.getElementById('sspd-name'); if(el) el.textContent=SCORE_SPEEDS[v-1].name;
+}
+function SMS(ms){ return Math.round(ms/SCORE_SPEEDS[SCORE_SPEED-1].m); }   // scale a walkthrough beat
 // One "step" = one power point. Runs/flushes score 1 per card; pairs/fifteens score 2.
 function comboSteps(kind, cids){
   if(kind==='f15') return [{cids:cids.slice(),pts:1},{cids:cids.slice(),pts:1}]; // 2 pts, whole 15 flashes per point
@@ -2987,19 +3009,19 @@ async function playPasses(){
   const lc=lustCarry();   // carried bloodlust: the ⚔ glyph banks up from it, the combo total stays raw
   if(glyphEl) glyphEl.textContent=String(lc);
   if(ptsEl) ptsEl.textContent=String(Math.max(0, ptsAdj));
-  await sleep(T_INIT); if(!live()) return;
+  await sleep(SMS(T_INIT)); if(!live()) return;
   let lastKind=null;
   for(const line of lines){
     if(!live()) return;
     const kind=line.getAttribute('data-kind');
     const cids=(line.getAttribute('data-cids')||'').split(' ').filter(Boolean);
-    if(kind!==lastKind){ lastKind=kind; await sleep(T_PASS); if(!live()) return; }   // pace the pass transition; the active line + its icon show which category is scoring
+    if(kind!==lastKind){ lastKind=kind; await sleep(SMS(T_PASS)); if(!live()) return; }   // pace the pass transition; the active line + its icon show which category is scoring
     line.classList.remove('await'); line.classList.add('active');
     scrollToLine(line);
     pop(cids,true);                         // show the whole combo in gold first
     const nSteps=comboSteps(kind,cids).length;
     AudioSys.sfx(nSteps>=4?'score.big':'score.combo');   // a long run/flush announces louder
-    await sleep(T_LINE_ON); if(!live()) return;
+    await sleep(SMS(T_LINE_ON)); if(!live()) return;
     for(const st of comboSteps(kind,cids)){ // then bank one point at a time
       if(!live()) return;
       pop(st.cids,false);                   // the card(s) about to score drop gold…
@@ -3009,18 +3031,18 @@ async function playPasses(){
       if(totalEl){ totalEl.textContent=String(running); bump(totalEl); }
       if(glyphEl){ glyphEl.textContent=String(running+lc); bump(glyphEl); }
       if(ptsEl){ ptsEl.textContent=String(Math.max(0, running+ptsAdj)); bump(ptsEl); }
-      await sleep(T_POINT); if(!live()) return;
+      await sleep(SMS(T_POINT)); if(!live()) return;
     }
     pop(cids,false);
     line.classList.remove('active'); line.classList.add('done');
-    await sleep(T_LINE_OFF); if(!live()) return;
+    await sleep(SMS(T_LINE_OFF)); if(!live()) return;
   }
   if(!live()) return;
   if(totalEl) totalEl.textContent=String(running);
   if(glyphEl) glyphEl.textContent=String(running+lc);
   if(ptsEl) ptsEl.textContent=String(Math.max(0, running+ptsAdj));
   armStrike();   // scoring complete — the ⚔ glyph glows green and floats, ready to strike
-  await sleep(1400); if(!live()) return;
+  await sleep(SMS(1400)); if(!live()) return;
   lines.forEach(l=>l.classList.remove('await','done'));            // settle back to the resting breakdown
   document.querySelectorAll('.stage .card.spark').forEach(el=>el.classList.remove('spark'));
 }
@@ -3037,7 +3059,7 @@ function maybeAutoPlay(){
     armStrike(); return;
   }
   G._boardSig=sig;
-  setTimeout(playPasses, 230);
+  setTimeout(playPasses, SMS(230));
 }
 
 /* ---------- the lair prelude (iface: lairPrelude, zero rules effect) ---------- */
@@ -4083,6 +4105,19 @@ function diceSkinPickerHTML(){
       <span>${DICE_SKINS[k].name}</span></button>`).join("");
   return `<div class="dicepick"><div class="help">Dice — face design (Interface, no rules effect):</div><div class="swrow">${sw}</div></div>`;
 }
+// slider for Options — five notches over the scoring walkthrough's pacing; rides
+// under the Interface flags like the dice picker, self-gated on the walkthrough
+// actually playing (showCombos + autoScore). Zero rules effect — only how fast
+// the same points count up.
+function scoreSpeedPickerHTML(){
+  if(!FLAG('showCombos') || !FLAG('autoScore')) return "";
+  const v=SCORE_SPEED;
+  return `<div class="dicepick"><div class="help">Scoring walkthrough — speed (Interface, no rules effect). 1 is the original unhurried pace; 4 is double time.</div>
+    <div class="volrow"><span class="vlab">${SIG('spark')} Speed</span>
+      <input type="range" min="1" max="${SCORE_SPEEDS.length}" step="1" value="${v}" aria-label="Scoring walkthrough speed"
+        oninput="setScoreSpeed(this.value)" onchange="AudioSys.sfx('ui.click')">
+      <span class="vpct sspd" id="sspd-name">${SCORE_SPEEDS[v-1].name}</span></div></div>`;
+}
 
 function statusHTML(){
   const low=G.life<=6?"low":"";
@@ -4313,25 +4348,32 @@ function spineHTML(book,side,opts){
    INSIDE the open Crybt Crawl book — Chronicle stands as a peekable spine, the Workshop
    as a locked one (the lair is unreachable mid-crawl). Between crawls the Crawl book's
    body is the breathing crypt gate (shop shelf, unchanged). Presentation only. */
-let CRAWL_BOOK='crawl';        // which book is open during a crawl phase ('crawl' | 'chronicle')
+let CRAWL_BOOK='crawl';        // which book is open during a crawl phase ('crawl' | 'chronicle' | 'workshop')
+const CRAWL_SHELF_ORDER=['chronicle','workshop','crawl'];   // fixed shelf order left→right
 function openCrawlBook(book){
-  if(book===CRAWL_BOOK || !['chronicle','crawl'].includes(book)) return;
-  _shopBookDir = book==='chronicle' ? 'left' : 'right';   // shelf order: Chronicle(0) · Workshop(1) · Crawl(2)
+  const allowed=['chronicle','crawl'].concat(FLAG('workshopPeek')?['workshop']:[]);
+  if(book===CRAWL_BOOK || !allowed.includes(book)) return;
+  _shopBookDir = CRAWL_SHELF_ORDER.indexOf(book)<CRAWL_SHELF_ORDER.indexOf(CRAWL_BOOK) ? 'left' : 'right';
   CRAWL_BOOK=book; _shopBookAnim=true;
   try{ AudioSys.sfx('ui.click'); }catch(e){}
   render();
 }
 function crawlShelfHTML(body){
-  const openIsChron = CRAWL_BOOK==='chronicle';
-  const openBody = openIsChron ? chronicleBookHTML('crawl') : body;
+  const openBody = CRAWL_BOOK==='chronicle' ? chronicleBookHTML('crawl')
+                 : CRAWL_BOOK==='workshop'  ? workshopPeekHTML()
+                 : body;
   const swap=_shopBookAnim?` bookswap swap-${_shopBookDir}`:"";
-  const wsLock = spineHTML('workshop', openIsChron?'right':'left',
-    {locked:true, lockTip:"The lair is far above — return at crawl's end"});
-  const left  = openIsChron ? "" : spineHTML('chronicle','left',{open:'openCrawlBook'}) + wsLock;
-  const right = openIsChron ? wsLock + spineHTML('crawl','right',{open:'openCrawlBook'}) : "";
+  // The Workshop spine: a browse-only peek with workshopPeek on (iface, zero rules
+  // effect — the lair still only truly opens at crawl's end); locked shut with it off.
+  const spine=(book,side)=> book==='workshop' && !FLAG('workshopPeek')
+    ? spineHTML('workshop', side, {locked:true, lockTip:"The lair is far above — return at crawl's end"})
+    : spineHTML(book, side, {open:'openCrawlBook'});
+  const openIdx=CRAWL_SHELF_ORDER.indexOf(CRAWL_BOOK);
+  const left  = CRAWL_SHELF_ORDER.slice(0,openIdx).map(b=>spine(b,'left')).join("");
+  const right = CRAWL_SHELF_ORDER.slice(openIdx+1).map(b=>spine(b,'right')).join("");
   return `<div class="shoprow crawlrow">
       <div class="shelf shelf-left">${left}</div>
-      <div class="bookopen book-${openIsChron?'chronicle':'crawl'}${swap}">${openBody}</div>
+      <div class="bookopen book-${CRAWL_BOOK}${swap}">${openBody}</div>
       <div class="shelf shelf-right">${right}</div>
     </div>`;
 }
@@ -4815,7 +4857,9 @@ function boonShelfHTML(preview){
 // Workshop room the Offering uses, but before anything has died: the necromancer's
 // sheet to read, the boons to window-shop, and the Crybt Crawl book waiting on the
 // shelf. Browse-only — nothing here spends or changes a thing. (JBK 2026-07-04) ----
-function preludeHTML(){
+// The necromancer's sheet as browse-only stat tiles — shared by the lair prelude
+// and the mid-crawl Workshop peek. Reads live G state; no handlers, nothing spends.
+function necroSheetHTML(){
   const stats=[
     {icon:'blood',  name:'Life',  val:`${G.life}/${G.maxLife}`,
      tip:"Your heartbeat. When a monster's power beats your hand, the difference wounds you — at 0 the run ends. Blood Prayers at the Offering buy it back."},
@@ -4830,12 +4874,67 @@ function preludeHTML(){
   }
   stats.push({icon:'skull', name:'Army', val:G.graveyard.length,
      tip:"Every monster you defeat joins your army in the graveyard — swap them in as your Hero mid-fight"+(FLAG('graveOffering')?", and they add bonus points when the offering scores.":".")});
-  const statShelf=`<div class="statshelf">`+stats.map(s=>`<div class="boontile preview stat" tabindex="0">
+  return `<div class="statshelf">`+stats.map(s=>`<div class="boontile preview stat" tabindex="0">
       <span class="bt-ic">${SIG(s.icon)}</span>
       <span class="bt-name">${s.name}</span>
       <span class="bt-cost">${s.val}</span>
       <span class="tip"><b>${s.name}</b> — ${s.tip}</span>
     </div>`).join("")+`</div>`;
+}
+// The prayer catalog with live can/cost/meta state — shared by the Offering shop
+// (buyable tiles) and the mid-crawl Workshop peek (rendered read-only there).
+// `can` reads G.offerPoints, which is only funded at the Offering — mid-crawl it
+// gates everything false on its own.
+function prayerDefsList(){
+  const canHeal=G.offerPoints>0 && G.life<G.maxLife;
+  const canPray=FLAG('darkPrayer') && !G.darkPrayerBought && G.offerPoints>=2;
+  const domCost=G.dominance+1;
+  const canDom=FLAG('bloodlust') && G.offerPoints>=domCost;
+  const canFury=FLAG('bloodlust') && G.offerPoints>=2;
+  const prayerDefs=[
+    {icon:'blood', name:'Blood Prayer', cost:1, can:canHeal, owned:false, act:'buyHeal()',
+     meta:`${G.life}/${G.maxLife} life`,
+     tip:'Heal +1 life for 1 point — spend freely while you have points and room to heal.'},
+  ];
+  if(FLAG('darkPrayer')) prayerDefs.push(
+    {icon:'shield', name:'Dark Prayer', cost:2, can:canPray, owned:G.darkPrayerBought, act:'buyArmor()',
+     meta:`armor ${G.armor}`,
+     tip:"A ward you renew each crawl — your armor absorbs this much damage every encounter. <i>(Raihn's Reversion)</i>"});
+  if(FLAG('bloodlust')){
+    prayerDefs.push(
+      {icon:'skull', name:'Dominance Prayer', cost:domCost, can:canDom, owned:false, act:'buyDominance()',
+       meta:`will ${G.dominance}`,
+       tip:"Hardens your will (cost rises each time) — the higher your Dominance, the sooner an overkill turns into bloodlust that carries into the next fight. <i>(Raihn's Reversion)</i>"});
+    prayerDefs.push(
+      {icon:'blood', name:'Fury Prayer', cost:2, can:canFury, owned:false, act:'buyFury()',
+       meta:`+${G.fury}/fight`,
+       tip:"Banks +1 bloodlust going into every fight. <i>(Raihn's Reversion)</i>"});
+  }
+  return prayerDefs;
+}
+// ---- The Workshop peek (iface: workshopPeek) — the lair, readable mid-crawl.
+// Browse-only reference: the sheet, the boon shelf, and prayer costs, so a player
+// can plan the next Offering without leaving the fight. Deliberately does NOT call
+// workshopHTML(): mid-crawl that would land on the villager-reveal altar with a
+// live revealVillager() action — this page composes only handler-free pieces.
+function workshopPeekHTML(){
+  const peekInfo=`<b>${SIG('candle')} A memory of home.</b> The lair is far above — this page is only a reference `+
+    `while you fight: your necromancer's sheet, the boons, and what prayers will cost at the next Offering. `+
+    `Nothing can be bought or spent mid-crawl. Open the <b>Crybt Crawl</b> book to return to the fight.`;
+  const prayers=`<div class="prayershelf">`+prayerDefsList().map(p=>`<div class="boontile ${p.owned?'owned':'locked'} preview" tabindex="0">
+      <span class="bt-ic">${SIG(p.icon)}</span>
+      <span class="bt-name">${p.name}</span>
+      <span class="bt-cost">${p.owned?"✓ owned":p.cost+" pt"}</span>
+      <span class="tip"><b>${p.name}</b> — ${p.tip} <span class="tip-now">Now: ${p.meta}.</span></span>
+    </div>`).join("")+`</div>`;
+  return `<div class="stagehead"><h2>${SIG('candle')} The Workshop — A Look Homeward</h2>${infoIcon(peekInfo)}</div>
+    <p class="prompt">The lair as you left it — browse for reference. The fight waits exactly where you left it in the Crybt Crawl book.</p>
+    <div class="prayerzone preludesheet" style="margin-top:0"><h3>Your necromancer</h3>${necroSheetHTML()}</div>
+    <div class="shop-bottom"><div class="boonzone"><h3>Boons ${infoIcon("Permanent upgrades, bought with offering points at the end of every crawl. Browse-only from here — hover a tile to learn what it does.")}</h3>${boonShelfHTML(true)}</div></div>
+    <div class="shop-bottom peek-prayers"><div class="boonzone"><h3>Prayers to come ${infoIcon("The point-spends at the Offering — healing, wards, will. Costs shown for planning; nothing can be bought mid-crawl.")}</h3>${prayers}</div></div>`;
+}
+function preludeHTML(){
+  const statShelf=necroSheetHTML();
   const preInfo=`<b>${SIG('candle')} Your lair.</b> Every crawl ends back in this room: the cards you sacrificed `+
     `score together as one cribbage hand, and the points buy healing and the boons below. Right now the shelves `+
     `are just for browsing — hover anything to learn what it does. When you're ready, open the <b>Crybt Crawl</b> `+
@@ -4904,30 +5003,7 @@ function workshopHTML(){
   // will, banked fury) rides in the tip so the tile stays boon-height and both shelves clear the
   // Chronicle "book" band at the board's foot. Affordable tiles get onclick+role=button so mouse,
   // Enter, and the pad's gameplay layer all reach them exactly as they reach boon tiles.
-  const canHeal=G.offerPoints>0 && G.life<G.maxLife;
-  const canPray=FLAG('darkPrayer') && !G.darkPrayerBought && G.offerPoints>=2;
-  const domCost=G.dominance+1;
-  const canDom=FLAG('bloodlust') && G.offerPoints>=domCost;
-  const canFury=FLAG('bloodlust') && G.offerPoints>=2;
-  const prayerDefs=[
-    {icon:'blood', name:'Blood Prayer', cost:1, can:canHeal, owned:false, act:'buyHeal()',
-     meta:`${G.life}/${G.maxLife} life`,
-     tip:'Heal +1 life for 1 point — spend freely while you have points and room to heal.'},
-  ];
-  if(FLAG('darkPrayer')) prayerDefs.push(
-    {icon:'shield', name:'Dark Prayer', cost:2, can:canPray, owned:G.darkPrayerBought, act:'buyArmor()',
-     meta:`armor ${G.armor}`,
-     tip:"A ward you renew each crawl — your armor absorbs this much damage every encounter. <i>(Raihn's Reversion)</i>"});
-  if(FLAG('bloodlust')){
-    prayerDefs.push(
-      {icon:'skull', name:'Dominance Prayer', cost:domCost, can:canDom, owned:false, act:'buyDominance()',
-       meta:`will ${G.dominance}`,
-       tip:"Hardens your will (cost rises each time) — the higher your Dominance, the sooner an overkill turns into bloodlust that carries into the next fight. <i>(Raihn's Reversion)</i>"});
-    prayerDefs.push(
-      {icon:'blood', name:'Fury Prayer', cost:2, can:canFury, owned:false, act:'buyFury()',
-       meta:`+${G.fury}/fight`,
-       tip:"Banks +1 bloodlust going into every fight. <i>(Raihn's Reversion)</i>"});
-  }
+  const prayerDefs=prayerDefsList();
   const prayerShelf=`<div class="prayershelf">`+prayerDefs.map(p=>{
     const state=p.owned?"owned":p.can?"afford":"locked";
     const act=p.can?` onclick="${p.act}" role="button" tabindex="0" onkeydown="if(event.key==='Enter'){${p.act}}"`:` tabindex="0"`;

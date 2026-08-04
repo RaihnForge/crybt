@@ -1967,7 +1967,7 @@ function psCreditsHTML(){
   const art=artCreditLine();
   const au=(AudioSys.set&&AudioSys.set.credits)?[AudioSys.set.credits.music,AudioSys.set.credits.sfx].filter(Boolean).join(" · "):"";
   return `<p><b>CRYBT</b> — original tabletop game by <b>TechDweeb</b>. All game rules and the CRYBT name are theirs.</p>
-    <p>This digital adaptation is a <b>free fan build</b>, released as a <b>pre-alpha</b> with the original creator's permission (2026-07-06). Not for sale — the tabletop game and its rules remain TechDweeb's alone.</p>
+    <p>This digital adaptation is a <b>free fan build</b>, summoned into the browser from the tabletop original <b>with the creator's own blessing</b> (permission granted 2026-07-06 — the necromancer asked first, and the diplomacy roll came up a natural 20). <b>Pre-alpha</b>, and <b>not for sale</b>: the summon walks free, but its soul — the rules and the CRYBT name — remains bound to TechDweeb alone.</p>
     <p class="help">Art direction per the GrimCrybt sheets; rule deviations are labeled in ${SIG('gear')} Options.</p>
     ${art?`<p class="help">${art}</p>`:""}
     ${au?`<p class="help">${au}</p>`:""}`;
@@ -4538,7 +4538,7 @@ function menuHTML(){
   return `<div class="titlescreen">
     <img class="logo" src="${TITLE_LOGO}" alt="CRYBT">
     <div class="tagline">Draw &amp; Descend to Darkness</div>
-    <div class="buildtag">pre-alpha · 2026-08-04 · 11:12</div>
+    <div class="buildtag">pre-alpha · 2026-08-04 · 11:29</div>
     <div class="titlemenu">
       <button class="menu-btn start" onclick="newGame();startPrelude()">${SIG('skull')} Start Game</button>
       <button class="menu-btn" onclick="toggleSettings()">${SIG('gear')} Options</button>

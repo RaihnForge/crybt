@@ -14,9 +14,12 @@ each 15, pair, run, and flush.
 ## What this is
 
 A **fan digital adaptation** of the tabletop game **CRYBT by TechDweeb** —
-all game rules and the CRYBT name are TechDweeb's. This free pre-alpha is
-published with the original creator's permission (2026-07-06). It is not for
-sale, and it is not the tabletop game — go get TechDweeb's original.
+all game rules and the CRYBT name are TechDweeb's. This free pre-alpha was
+summoned into the browser **with the original creator's blessing** (permission
+granted 2026-07-06 — the necromancer asked first, and the diplomacy roll came
+up a natural 20). The summon walks free; its soul — the rules and the name —
+stays bound to TechDweeb. It is not for sale, and it is not the tabletop
+game — go get TechDweeb's original.
 
 **Pre-alpha** means exactly that: rough edges, balance still moving,
 save-nothing-but-settings. Feedback is welcome via GitHub Issues.
@@ -49,7 +52,8 @@ Every deviation from the printed tabletop rules is a labeled switch in
 ## Rights
 
 The CRYBT rules and name are © TechDweeb, used here with permission for this
-free pre-alpha fan release. The adaptation's code and the GrimToon asset sets
+free pre-alpha fan release (a sanctioned summoning — the necromancer asked
+first). The adaptation's code and the GrimToon asset sets
 are © Keyes Dev Studio. Play it and share the link freely; no other rights are
 granted — no redistribution of modified builds, no commercial use, and no
 standalone extraction of the embedded audio (the packs' own licenses forbid

@@ -2945,18 +2945,19 @@ let ANIM={token:0};
 function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
 const T_INIT=400, T_PASS=460, T_LINE_ON=320, T_POINT=270, T_LINE_OFF=240;
 /* Scoring walkthrough speed (iface control, zero rules effect): five notches divide
-   every walkthrough beat. Notch 1 = the original pacing (the slowest); notch 4 =
-   double time, the default (JBK 2026-08-04). Persisted per device like the dice skin. */
+   every walkthrough beat. Notch 1 = the original pacing (the slowest); notch 3 =
+   half-again speed, the default (JBK 2026-08-04, eased from 2× the same day).
+   Persisted per device like the dice skin. */
 const SCORE_SPEEDS=[
   {m:1,   name:"Solemn"},
-  {m:1.35,name:"Measured"},
-  {m:1.7, name:"Brisk"},
+  {m:1.25,name:"Measured"},
+  {m:1.5, name:"Brisk"},
   {m:2,   name:"Swift"},
   {m:3,   name:"Lightning"}];
 let SCORE_SPEED=(()=>{ try{ const v=parseInt(localStorage.getItem("crybt-scorespeed"),10);
-  return (v>=1&&v<=SCORE_SPEEDS.length)?v:4; }catch(e){ return 4; } })();
+  return (v>=1&&v<=SCORE_SPEEDS.length)?v:3; }catch(e){ return 3; } })();
 function setScoreSpeed(v){
-  v=Math.max(1,Math.min(SCORE_SPEEDS.length,parseInt(v,10)||4));
+  v=Math.max(1,Math.min(SCORE_SPEEDS.length,parseInt(v,10)||3));
   SCORE_SPEED=v; try{ localStorage.setItem("crybt-scorespeed",String(v)); }catch(e){}
   const el=document.getElementById('sspd-name'); if(el) el.textContent=SCORE_SPEEDS[v-1].name;
 }
@@ -4112,7 +4113,7 @@ function diceSkinPickerHTML(){
 function scoreSpeedPickerHTML(){
   if(!FLAG('showCombos') || !FLAG('autoScore')) return "";
   const v=SCORE_SPEED;
-  return `<div class="dicepick"><div class="help">Scoring walkthrough — speed (Interface, no rules effect). 1 is the original unhurried pace; 4 is double time.</div>
+  return `<div class="dicepick"><div class="help">Scoring walkthrough — speed (Interface, no rules effect). 1 is the original unhurried pace; 3 (the default) is half again as fast; 4 is double time.</div>
     <div class="volrow"><span class="vlab">${SIG('spark')} Speed</span>
       <input type="range" min="1" max="${SCORE_SPEEDS.length}" step="1" value="${v}" aria-label="Scoring walkthrough speed"
         oninput="setScoreSpeed(this.value)" onchange="AudioSys.sfx('ui.click')">

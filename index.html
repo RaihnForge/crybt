@@ -215,6 +215,18 @@
   @keyframes cardshake{0%{transform:translateX(0)}15%{transform:translateX(-7px) rotate(-3deg)}
     35%{transform:translateX(7px) rotate(3deg)}55%{transform:translateX(-5px) rotate(-2deg)}
     75%{transform:translateX(4px) rotate(1.5deg)}100%{transform:translateX(0)}}
+  /* boot veil — covers first paint while the ~30MB of sync sidecar scripts parse:
+     the graveyard scene + a progress bar instead of a half-built board flickering in.
+     Milestone <script> ticks between the sidecar tags drive the bar (BOOTBAR); the
+     boot block's last act fades the whole curtain to reveal the finished game. */
+  #bootveil{position:fixed;inset:0;z-index:9000;background:#06040b;transition:opacity .55s ease}
+  #bootveil::before{content:"";position:absolute;inset:0;background:var(--stage-bg02) center/cover no-repeat;opacity:.85}
+  #bootveil::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 40%, transparent 30%, rgba(4,2,8,.78) 100%)}
+  #bootveil .bv-panel{position:absolute;left:50%;bottom:16%;transform:translateX(-50%);width:min(340px,72vw);text-align:center;z-index:1}
+  #bootveil .bv-note{font-family:Georgia,serif;color:#cdbfa3;font-size:13px;letter-spacing:4px;text-transform:uppercase;opacity:.85;margin-bottom:10px;text-shadow:0 1px 3px #000}
+  #bootveil .bv-bar{height:9px;border:1px solid rgba(255,209,102,.5);border-radius:6px;background:rgba(6,4,11,.72);overflow:hidden;box-shadow:0 0 12px rgba(0,0,0,.6)}
+  #bootveil .bv-bar i{display:block;height:100%;width:4%;background:linear-gradient(90deg,#5a3f86,#b98bff);border-radius:5px;transition:width .35s ease}
+  #bootveil.gone{opacity:0;pointer-events:none}
   .screenflash{position:fixed;inset:0;z-index:900;pointer-events:none;opacity:0;animation:sflash .55s ease}
   .screenflash.win{background:radial-gradient(circle at 50% 50%, rgba(47,174,106,.28), transparent 60%)}
   .screenflash.lose{background:radial-gradient(circle at 50% 50%, rgba(255,93,115,.3), transparent 60%)}
@@ -521,9 +533,9 @@
   /* hovering a card (or its scoring line) washes the card light green and shows its
      cribbage value inside (JBK) — the value teaching lives on the card, not under the chips */
   .card.hot[data-val]::after{content:attr(data-val);position:absolute;inset:0;border-radius:9px;
-    background:rgba(124,242,154,.30);display:flex;align-items:center;justify-content:center;
-    font-size:32px;font-weight:800;color:#0b2e1b;font-family:Georgia,serif;
-    text-shadow:0 0 8px rgba(255,255,255,.5)}
+    background:rgba(124,242,154,.55);display:flex;align-items:center;justify-content:center;
+    font-size:32px;font-weight:800;color:#fff;font-family:Georgia,serif;
+    text-shadow:0 1px 3px rgba(0,0,0,.7),0 0 10px rgba(0,0,0,.4)}
   .ckind{font-size:10px;letter-spacing:.5px;text-transform:uppercase;border-radius:20px;padding:1px 8px;font-weight:bold;color:#0d0b14}
   .ckind.f15{background:#ffd166}.ckind.pair{background:#7cf29a}.ckind.run{background:#7cc5ff}.ckind.flush{background:#b98bff}
   /* settings */
@@ -936,6 +948,21 @@
     40%{transform:scale(1.14);box-shadow:0 0 44px rgba(255,93,115,.95)}
     100%{transform:scale(1);box-shadow:0 0 14px rgba(255,93,115,.45)}}
   .sacpulse{animation:sacpulse .6s ease;border-color:var(--danger)!important;outline:2px solid var(--danger)}
+  /* claw mark — kill-confirm flourish (clawThenResolve): three red rakes tear down the
+     claimed monster along their cant, pulse bright, then fade before the card flies */
+  .clawmark{position:absolute;inset:-8%;z-index:4;pointer-events:none;transform:rotate(-16deg)}
+  .clawmark svg{width:100%;height:100%;display:block;color:#ff2b40;opacity:0;
+    transform:scaleY(.1);transform-origin:50% 12%;
+    filter:drop-shadow(0 0 6px rgba(255,43,64,.8));
+    animation:clawRake .6s cubic-bezier(.25,.75,.3,1) forwards}
+  @keyframes clawRake{
+    0%{transform:scaleY(.1);opacity:0}
+    14%{opacity:1}
+    36%{transform:scaleY(1)}
+    54%{color:#ff6b7e;filter:drop-shadow(0 0 16px rgba(255,60,80,1))}
+    70%{color:#ff2b40;opacity:1;filter:drop-shadow(0 0 8px rgba(255,43,64,.8))}
+    100%{transform:scaleY(1);opacity:0}
+  }
   /* hero summon: the slot sits empty until the sacrifice calls a hero up from the deck */
   .slotempty{width:66px;height:94px;border-radius:9px;border:2px dashed rgba(185,139,255,.35);
     background:rgba(185,139,255,.04);flex:0 0 auto}
@@ -1142,6 +1169,16 @@
 </style>
 </head>
 <body>
+<!-- Boot veil: this markup parses (and paints) BEFORE the heavy sidecar scripts below
+     block the parser, so a slow first load shows the graveyard scene + a filling bar
+     instead of half-built UI. BOOTBAR(pct) ticks ride between the sidecar tags. -->
+<div id="bootveil" aria-hidden="true">
+  <div class="bv-panel">
+    <div class="bv-note">The Crypt stirs</div>
+    <div class="bv-bar"><i id="bv-fill"></i></div>
+  </div>
+</div>
+<script>function BOOTBAR(p){var f=document.getElementById('bv-fill');if(f)f.style.width=p+'%';}BOOTBAR(8);</script>
 <div class="viewport" id="viewport">
  <div class="canvas" id="canvas">
 
@@ -1248,6 +1285,7 @@
      this file — a missing file fails silently and the built-in glyph sigils carry the
      whole look. Swap asset sets by swapping this one file. Contract documented inside. -->
 <script src="crybt-assets.js"></script>
+<script>BOOTBAR(35)</script>
 
 <!-- OPTIONAL Storyteller kit: the narrator's personality as a swappable module —
      name, backstory, and the full line library (window.CRYBT_STORYTELLER_SET).
@@ -1256,6 +1294,7 @@
      personality or add another voice by swapping this one file. Contract in the
      "THE STORYTELLER" comment inside index.html. -->
 <script src="crybt-storyteller.js"></script>
+<script>BOOTBAR(42)</script>
 
 
 <!-- OPTIONAL audio set (the Sigil system's sound sibling): background music and
@@ -1272,6 +1311,7 @@ document.write('<script src="crybt-audio.js' +
   (location.protocol === 'file:' ? '' : '?v=45') +   /* AUDIO_CACHE_BUST */
   '"><\/script>');
 </script>
+<script>BOOTBAR(88)</script>
 
 <script>
 "use strict";
@@ -1356,6 +1396,13 @@ function buildSigilDefs(){
   }
   defs+=sym("card-BACK", cardBackInner());
   defs+=sym("card-JOKER", cardJokerInner());
+  // claw mark — the kill-confirm flourish over a claimed monster (clawThenResolve):
+  // three tapered rakes, middle one longest, each leaning slightly so the tear reads
+  // canted. Color rides currentColor so the CSS animation can pulse/brighten the red.
+  defs+=sym("claw",
+    `<path fill="currentColor" d="M3.15 1.0 L2.45 8.8 L2.08 8.68 L2.6 1.15 Z"/>`+
+    `<path fill="currentColor" d="M5.55 0.2 L4.75 9.8 L4.35 9.7 L4.95 0.35 Z"/>`+
+    `<path fill="currentColor" d="M7.9 1.0 L7.2 8.8 L6.83 8.68 L7.35 1.15 Z"/>`);
   ART_KEYS.clear();
   if(set && set.cardArt && FLAG('cardArt')){
     for(const k in set.cardArt){
@@ -3591,12 +3638,27 @@ function claimMonster(){
   const seat=document.getElementById('rdMon');
   if(!seat || seat.dataset.claimed) return;        // ignore repeat pokes while it resolves
   seat.dataset.claimed="1";
-  if(G.result && G.result.win){ afterResolve(); return; }
+  if(G.result && G.result.win){ clawThenResolve(); return; }
   // loss: the monster shudders under your hand, then its card flies to the discard on delve
   const card=seat.querySelector('.card');
   AudioSys.sfx('card.select',{rate:0.85});
   if(card){ card.classList.remove('cardshake'); void card.offsetWidth; card.classList.add('cardshake'); }
   setTimeout(afterResolve, 340);
+}
+// The kill-confirm flourish: on a win the claw tears across the dead monster — three
+// red rakes stretch down their cant, pulse bright, and fade — THEN the board advances
+// (afterResolve() re-renders, destroying this card's DOM, so the advance waits out the
+// animation). Loss paths keep their shudder / instant advance. A second click mid-
+// flourish fast-forwards immediately; the stale timer dies on afterResolve's phase guard.
+function clawThenResolve(){
+  if(!G || G.phase!=="resolve") return;
+  const won=G.result&&G.result.win;
+  const card=document.querySelector('#rdMon .card');
+  if(!won || !card || card.querySelector('.clawmark')){ afterResolve(); return; }
+  const m=document.createElement('span'); m.className='clawmark';
+  m.innerHTML='<svg viewBox="0 0 10 10" aria-hidden="true"><use href="#sig-claw"/></svg>';
+  card.appendChild(m);
+  setTimeout(afterResolve, 620);
 }
 function afterResolve(){
   if(!G || G.phase!=="resolve") return;   // guard: button + monster-click can't double-advance
@@ -4763,7 +4825,7 @@ function resolveHTML(){
             ${notes}
             ${detail}
           </div>
-          <div class="actions resolve-next"><button class="btn primary" onclick="afterResolve()">${nextLabel}</button></div>
+          <div class="actions resolve-next"><button class="btn primary" onclick="clawThenResolve()">${nextLabel}</button></div>
           ${tipBody?infoIcon(tipBody):""}
         </div>
       </div>
@@ -5616,6 +5678,10 @@ buildSigilDefs();
 AudioSys.init();   // decode the optional audio set — stays silent until the first gesture
 initTipPortal();   // hover/focus/pad tips render in a top-level overlay (never trapped/clipped)
 newGame();
+// boot complete — fill the veil's bar, then fade the whole curtain to reveal the board
+BOOTBAR(100);
+(function(){ const bv=document.getElementById('bootveil');
+  if(bv) setTimeout(()=>{ bv.classList.add('gone'); setTimeout(()=>bv.remove(), 700); }, 180); })();
 </script>
 </body>
 </html>
